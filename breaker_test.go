@@ -249,3 +249,57 @@ func ExampleBreaker_Execute_custoom() {
 	wg.Wait()
 	b.Shutdown()
 }
+
+func TestBreaker(t *testing.T) {
+	f, err := os.OpenFile("testlogrus.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		fmt.Printf("error opening file: %v", err)
+	}
+	defer f.Close()
+	fmt.Println("Running Test_execute_exceed_limit_wait_till_circuit_ok demo....")
+	//b := &breaker.Breaker{}
+	b := New("name", 1010*time.Millisecond, 5)
+	b.HealthCheckInterval = 1000
+	w1 := &wrapper2{"Service 1", false}
+	b.Execute(w1)
+	w2 := &wrapper2{"Service 2", false}
+	b.Execute(w2)
+	w3 := &wrapper2{"Service 3", false}
+	b.Execute(w3)
+	w4 := &wrapper2{"Service 4", false}
+	b.Execute(w4)
+	w5 := &wrapper2{"Service 5", false}
+	b.Execute(w5)
+	time.Sleep(2020 * time.Millisecond)
+
+	b.Shutdown()
+}
+
+func collectErr(chan error) {
+
+}
+
+type wrapper21 struct {
+	name string
+	exec bool
+}
+
+func (w *wrapper21) Name() string {
+	return w.name
+}
+
+func (w *wrapper21) CommandFunc() {
+	time.Sleep(1000 * time.Millisecond)
+	fmt.Println("Success: Executing ", w.name)
+	w.exec = true
+}
+func (w *wrapper21) DefaultFunc() {
+	if !w.exec {
+		fmt.Println("Failure: Defaulting ", w.name)
+	}
+}
+func (w *wrapper21) CleanupFunc() {
+	if !w.exec {
+		fmt.Println("Failure: Cleaning ", w.name)
+	}
+}
